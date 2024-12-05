@@ -1,5 +1,4 @@
 ---
-# tasks file for Docker
 - name: Update APT package index
   apt:
     update_cache: yes
@@ -25,11 +24,48 @@
 
 - name: Install Docker CE
   apt:
-    name: docker-ce={{ docker_version }}
+    name: docker-ce
     state: latest
+
+- name: Ensure Docker service is running and enabled
+  service:
+    name: docker
+    state: started
+    enabled: true
 
 - name: Download Docker Compose binary
   get_url:
     url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-linux-x86_64"
-    dest: "{{ docker_install_path }}/docker-compose"
+    dest: /usr/local/bin/docker-compose
     mode: '0755'
+
+- name: Ensure docker-compose is executable
+  file:
+    path: /usr/local/bin/docker-compose
+    mode: '0755'
+    state: file
+
+- name: Clone the Django app repository
+  git:
+    repo: "{{ django_app_repo_url }}"
+    dest: "{{ django_app_path }}"
+    update: "{{ django_app_git_update }}"
+
+- name: Create Docker Compose file
+  copy:
+    dest: "{{ django_app_path }}/docker-compose.yml"
+    content: |
+      version: '3'
+      services:
+        web:
+          image: "{{ django_docker_image }}"
+          ports:
+            - "{{ django_app_port }}:8000"
+          volumes:
+            - .:/code
+          command: python3 manage.py runserver 0.0.0.0:8000
+
+- name: Start the application
+  command: docker-compose up -d
+  args:
+    chdir: "{{ django_app_path }}"
