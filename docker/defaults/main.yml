@@ -1,0 +1,17 @@
+---
+# Docker Compose
+docker_compose_version: "v2.30.3"
+
+# Django Git URL
+django_app_repo_url: "https://github.com/mdn/django-locallibrary-tutorial.git"
+
+# Django
+django_app_path: "/opt/django-locallibrary-tutorial"
+
+# Django Docker
+django_docker_image: "docker.io/timurbabs/django"
+
+# Django Port
+django_app_port: 8000
+
+django_app_git_update: true

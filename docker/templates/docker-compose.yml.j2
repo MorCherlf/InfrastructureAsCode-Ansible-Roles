@@ -1,0 +1,10 @@
+version: '3'
+services:
+  django:
+    image: timurbabs/django
+    container_name: {{ django_container_name }}
+    ports:
+      - "8000:8000"
+    volumes:
+      - /opt/django-locallibrary-tutorial:/app
+    command: python3 manage.py runserver 0.0.0.0:8000
