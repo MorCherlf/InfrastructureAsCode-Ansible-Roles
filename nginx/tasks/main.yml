@@ -1,18 +1,23 @@
 ---
-    - name: Install Nginx
-      apt:
-        name: nginx
-        state: present
-    
-    - name: Ensure Nginx is started and enabled
-      service:
-        name: nginx
-        state: started
-        enabled: true
-    
-    - name: Apply Nginx configuration
-      ansible.builtin.template:
-        src: nginx.conf.j2
-        dest: /etc/nginx/nginx.conf
-        validate: /usr/sbin/nginx -t -c %s
-        backup: yes
+- name: Install Nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: Ensure Nginx service is running and enabled
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: yes
+
+- name: Copy Nginx configuration
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: "{{ nginx_config_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+    validate: nginx -t -c %s
+  notify:
+    - reload nginx
