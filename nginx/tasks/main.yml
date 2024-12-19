@@ -26,13 +26,6 @@
   notify:
     - validate nginx configuration
 
-- name: Validate and reload Nginx
-  ansible.builtin.command:
-    cmd: nginx -t && systemctl reload nginx
-  notify:
-    - reload nginx
-
-
 - name: Ensure Nginx service is running and enabled
   ansible.builtin.service:
     name: nginx
