@@ -4,3 +4,5 @@ nginx_config_path: /etc/nginx/sites-available/default
 # 默认的 Django 服务地址和端口
 django_server_host: 127.0.0.1
 django_server_port: 8000
+
+server_name: localhost
