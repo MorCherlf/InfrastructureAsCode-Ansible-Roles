@@ -1,5 +1,4 @@
 ---
-# handlers file for nginx
 - name: reload nginx
   ansible.builtin.service:
     name: nginx

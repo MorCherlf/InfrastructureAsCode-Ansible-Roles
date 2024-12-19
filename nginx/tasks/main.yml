@@ -19,7 +19,7 @@
 - name: Copy site-specific Nginx configuration
   ansible.builtin.template:
     src: default.j2
-    dest: "{{ nginx_config_path }}"
+    dest: /etc/nginx/sites-enabled/default
     owner: root
     group: root
     mode: '0644'
