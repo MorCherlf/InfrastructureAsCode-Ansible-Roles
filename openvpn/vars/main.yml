@@ -1,0 +1,10 @@
+---
+# vars file for openvpn
+openvpn_port: 1194
+openvpn_protocol: udp
+openvpn_network: 10.8.0.0
+openvpn_mask: 255.255.255.0
+openvpn_status_log: /var/log/openvpn-status.log
+openvpn_log: /var/log/openvpn.log
+openvpn_dh_file: /etc/openvpn/dh.pem
+openvpn_verbosity: 3

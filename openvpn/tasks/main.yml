@@ -1,0 +1,113 @@
+---
+- name: Install OpenVPN
+  apt:
+    name: openvpn
+    state: present
+
+- name: Generate Diffie-Hellman parameters if not exist
+  command: openssl dhparam -out /etc/openvpn/dh.pem 2048
+  args:
+    creates: /etc/openvpn/dh.pem
+
+- name: Install Easy-RSA
+  apt:
+    name: easy-rsa
+    state: present
+
+- name: Ensure Easy-RSA directory exists
+  ansible.builtin.file:
+    path: /etc/openvpn/easy-rsa
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+
+- name: Check if Easy-RSA archive exists
+  stat:
+    path: /tmp/easy-rsa.tgz
+  register: easy_rsa_archive_stat
+
+- name: Download Easy-RSA archive
+  get_url:
+    url: https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.8/EasyRSA-3.0.8.tgz
+    dest: /tmp/easy-rsa.tgz
+  when: not easy_rsa_archive_stat.stat.exists
+
+- name: Extract Easy-RSA archive
+  ansible.builtin.unarchive:
+    src: /tmp/easy-rsa.tgz
+    dest: /etc/openvpn/easy-rsa
+    remote_src: yes
+    extra_opts:
+      - --strip-components=1
+  args:
+    creates: /etc/openvpn/easy-rsa/easyrsa
+
+- name: Ensure Easy-RSA script is executable
+  ansible.builtin.file:
+    path: /etc/openvpn/easy-rsa/easyrsa
+    mode: '0755'
+
+- name: Initialize Easy-RSA PKI
+  ansible.builtin.command:
+    cmd: ./easyrsa init-pki
+    chdir: /etc/openvpn/easy-rsa
+  args:
+    creates: /etc/openvpn/easy-rsa/pki
+  become: true
+- name: Generate OpenVPN CA key and certificate
+  ansible.builtin.command:
+    cmd: ./easyrsa build-ca nopass
+    chdir: /etc/openvpn/easy-rsa
+  args:
+    creates: /etc/openvpn/easy-rsa/pki/ca.crt
+  environment:
+    EASYRSA_BATCH: "1"
+    EASYRSA_REQ_CN: "Easy-RSA CA"
+  become: true
+
+- name: Generate server certificate and key
+  ansible.builtin.command:
+    cmd: ./easyrsa build-server-full server nopass
+    chdir: /etc/openvpn/easy-rsa
+  args:
+    creates: /etc/openvpn/easy-rsa/pki/issued/server.crt
+  environment:
+    EASYRSA_BATCH: "1"
+    EASYRSA_REQ_CN: "server"
+  become: true
+
+- name: Generate TA key
+  command: openvpn --genkey --secret /etc/openvpn/ta.key
+  args:
+    creates: /etc/openvpn/ta.key
+
+- name: Deploy OpenVPN configuration file
+  template:
+    src: openvpn.conf.j2
+    dest: /etc/openvpn/openvpn.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Copy generated certificates and keys to OpenVPN directory
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+    remote_src: true
+  with_items:
+    - { src: /etc/openvpn/easy-rsa/pki/ca.crt, dest: /etc/openvpn/ca.crt, mode: '0644' }
+    - { src: /etc/openvpn/easy-rsa/pki/issued/server.crt, dest: /etc/openvpn/server.crt, mode: '0644' }
+    - { src: /etc/openvpn/easy-rsa/pki/private/server.key, dest: /etc/openvpn/server.key, mode: '0600' }
+    - { src: /etc/openvpn/dh.pem, dest: /etc/openvpn/dh.pem, mode: '0644' }
+    - { src: /etc/openvpn/ta.key, dest: /etc/openvpn/ta.key, mode: '0600' }
+
+- name: Enable and start OpenVPN service
+  ansible.builtin.service:
+    name: openvpn@openvpn
+    state: started
+    enabled: true

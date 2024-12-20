@@ -1,0 +1,39 @@
+---
+- name: Verify OpenVPN setup
+  hosts: all
+  tasks:
+    - name: Check OpenVPN service is active
+      ansible.builtin.service_facts:
+
+    - name: Verify OpenVPN service status
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.services["openvpn@openvpn.service"].state == "running"
+        fail_msg: "OpenVPN service is not running."
+        success_msg: "OpenVPN service is running and active."
+
+    - name: Verify OpenVPN client config exists
+      ansible.builtin.stat:
+        path: /etc/openvpn/client.ovpn
+      register: client_config_stat
+
+    - name: Assert OpenVPN client config exists
+      ansible.builtin.assert:
+        that:
+          - client_config_stat.stat.exists
+          - client_config_stat.stat.size > 0
+        fail_msg: "OpenVPN client config file is missing or empty."
+        success_msg: "OpenVPN client config file exists and is valid."
+
+    - name: Verify OpenVPN is listening on the correct port
+      shell: ss -tunlp | grep "udp" | grep ":{{ openvpn_port }}"
+      register: openvpn_listening
+      changed_when: false
+      failed_when: openvpn_listening.rc != 0
+
+    - name: Assert OpenVPN is listening on the correct port
+      ansible.builtin.assert:
+        that:
+          - openvpn_listening.rc == 0
+        fail_msg: "OpenVPN is not listening on the expected port: {{ openvpn_port }}"
+        success_msg: "OpenVPN is listening on the correct port: {{ openvpn_port }}"

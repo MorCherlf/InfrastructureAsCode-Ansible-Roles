@@ -1,0 +1,71 @@
+---
+driver:
+  name: vagrant
+
+platforms:
+  - name: srv1
+    address: 100.117.33.35
+    ansible_user: vagrant
+    ansible_ssh_private_key_file: ~/.ssh/private_key_srv1
+
+  - name: srv2
+    address: 100.117.57.214
+    ansible_user: vagrant
+    ansible_ssh_private_key_file: ~/.ssh/private_key_srv2
+
+  - name: srv3
+    address: 100.117.45.240
+    ansible_user: vagrant
+    ansible_ssh_private_key_file: ~/.ssh/private_key_srv3
+
+  - name: srv4
+    address: 100.117.54.51
+    ansible_user: vagrant
+    ansible_ssh_private_key_file: ~/.ssh/private_key_srv4
+
+  - name: srv5
+    address: 100.117.44.92
+    ansible_user: vagrant
+    ansible_ssh_private_key_file: ~/.ssh/private_key_srv5
+
+provisioner:
+  name: ansible
+  inventory:
+    group_vars:
+      all:
+        openvpn_port: 1194
+    hosts:
+      all:
+        hosts:
+          srv1:
+            ansible_host: 100.117.33.35
+            ansible_user: vagrant
+            ansible_ssh_private_key_file: ~/.ssh/private_key_srv1
+          srv2:
+            ansible_host: 100.117.57.214
+            ansible_user: vagrant
+            ansible_ssh_private_key_file: ~/.ssh/private_key_srv2
+          srv3:
+            ansible_host: 100.117.45.240
+            ansible_user: vagrant
+            ansible_ssh_private_key_file: ~/.ssh/private_key_srv3
+          srv4:
+            ansible_host: 100.117.54.51
+            ansible_user: vagrant
+            ansible_ssh_private_key_file: ~/.ssh/private_key_srv4
+          srv5:
+            ansible_host: 100.117.44.92
+            ansible_user: vagrant
+            ansible_ssh_private_key_file: ~/.ssh/private_key_srv5
+
+scenario:
+  name: default
+  test_sequence:
+    - dependency
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - verify
+    - destroy
