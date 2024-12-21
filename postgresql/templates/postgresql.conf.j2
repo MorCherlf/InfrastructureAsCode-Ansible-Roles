@@ -1,0 +1,15 @@
+# PostgreSQL configuration file
+data_directory = '{{ data_directory }}'
+hba_file = '/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf'
+ident_file = '/etc/postgresql/{{ postgresql_version }}/main/pg_ident.conf'
+
+# Connections and authentication
+listen_addresses = '*'
+port = 5432
+max_connections = 100
+
+# Logging settings
+logging_collector = on
+log_directory = 'pg_log'
+log_filename = 'postgresql-{{ inventory_hostname }}.log'
+log_statement = 'all'

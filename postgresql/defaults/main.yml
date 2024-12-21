@@ -1,0 +1,14 @@
+---
+postgresql_version: "12"
+postgresql_conf_path: "/etc/postgresql/{{ postgresql_version }}/main"
+replication_user: "replicator"
+replication_password: "securepassword"
+data_directory: "/var/lib/postgresql/{{ postgresql_version }}/main"
+
+postgresql_users:
+  - name: app_user
+    password: app_password
+
+postgresql_databases:
+  - name: app_db
+    owner: app_user

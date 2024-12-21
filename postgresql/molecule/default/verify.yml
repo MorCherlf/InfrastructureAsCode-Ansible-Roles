@@ -1,0 +1,11 @@
+---
+- name: Verify PostgreSQL setup
+  hosts: all
+  tasks:
+    - name: Check if PostgreSQL is running
+      service_facts:
+    - name: Ensure PostgreSQL service is active
+      assert:
+        that:
+          - ansible_facts.services['postgresql'].state == 'running'
+        fail_msg: "PostgreSQL is not running."

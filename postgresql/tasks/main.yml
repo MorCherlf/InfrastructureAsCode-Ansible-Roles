@@ -1,0 +1,83 @@
+---
+# Ensure necessary dependencies are installed
+- name: Install ACL and Python dependencies
+  become: true
+  apt:
+    name:
+      - acl
+      - python3-psycopg2
+      - python3-pip
+    state: present
+    update_cache: yes
+
+- name: Ensure psycopg2 is installed via pip (if apt package is missing)
+  become: true
+  pip:
+    name: psycopg2-binary
+    state: present
+  when: ansible_python.version.major == 3
+  
+- name: Install PostgreSQL
+  apt:
+    name: "postgresql-{{ postgresql_version }}"
+    state: present
+
+- name: Include tasks for Master
+  include_tasks: master.yml
+  when: inventory_hostname == groups['master'][0]
+
+- name: Include tasks for Replica
+  include_tasks: replica.yml
+  when: inventory_hostname == groups['replica'][0]
+
+- name: Configure pg_hba.conf
+  template:
+    src: pg_hba.conf.j2
+    dest: /etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf
+    owner: postgres
+    group: postgres
+    mode: '0640'
+  notify: Restart PostgreSQL
+
+- name: Ensure data directory exists
+  ansible.builtin.file:
+    path: "{{ data_directory }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0700'
+  register: data_dir_result
+
+- name: Initialize PostgreSQL data directory
+  command: >
+    pg_ctl initdb
+    -D {{ data_directory }}
+  args:
+    creates: "{{ data_directory }}/PG_VERSION"
+  register: initdb_result
+
+- name: Restart PostgreSQL after data directory change
+  ansible.builtin.service:
+    name: postgresql
+    state: restarted
+  when: data_dir_result.changed or (initdb_result is defined and initdb_result.changed)
+
+- name: Create PostgreSQL users
+  become: true
+  become_user: postgres
+  become_method: sudo
+  ansible.builtin.postgresql_user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    state: present
+  loop: "{{ postgresql_users }}"
+
+
+- name: Create PostgreSQL databases
+  become: true
+  become_user: postgres
+  ansible.builtin.postgresql_db:
+    name: "{{ item.name }}"
+    owner: "{{ item.owner }}"
+    state: present
+  loop: "{{ postgresql_databases }}"

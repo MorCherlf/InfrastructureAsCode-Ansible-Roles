@@ -1,0 +1,12 @@
+---
+- name: Configure PostgreSQL Master
+  template:
+    src: postgresql.conf.j2
+    dest: /etc/postgresql/{{ postgresql_version }}/main/postgresql.conf
+  register: postgresql_master_config_result
+
+- name: Restart PostgreSQL Master
+  ansible.builtin.service:
+    name: postgresql
+    state: restarted
+  when: postgresql_master_config_result.changed

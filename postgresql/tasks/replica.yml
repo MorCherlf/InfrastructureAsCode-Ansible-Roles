@@ -1,0 +1,12 @@
+---
+- name: Configure PostgreSQL Replica
+  template:
+    src: postgresql.conf.j2
+    dest: /etc/postgresql/{{ postgresql_version }}/main/postgresql.conf
+  register: postgresql_replica_config_result
+
+- name: Restart PostgreSQL Replica
+  ansible.builtin.service:
+    name: postgresql
+    state: restarted
+  when: postgresql_replica_config_result.changed
