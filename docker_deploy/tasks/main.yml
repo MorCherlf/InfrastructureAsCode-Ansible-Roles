@@ -51,10 +51,6 @@
     groups: docker
     append: yes
 
-- name: Refresh user group membership
-  shell: newgrp docker
-  when: ansible_user != "root"
-
 - name: Verify Docker permissions
   shell: docker run --rm hello-world
   register: docker_test_run
