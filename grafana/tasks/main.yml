@@ -1,0 +1,129 @@
+---
+# Add Aliyun's mirror Grafana APT repository without GPG Key (Due to the local limited)
+- name: Add Aliyun's mirror Grafana APT repository
+  apt_repository:
+    repo: "deb [trusted=yes] https://mirrors.aliyun.com/grafana/apt stable main"
+    state: present
+    filename: grafana
+    update_cache: yes
+  become: yes
+
+# Update APT package index
+- name: Update APT package index
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  become: yes
+
+# Install Grafana
+- name: Install Grafana
+  apt:
+    name: grafana
+    state: latest
+  become: yes
+
+# Deploy Grafana Config file
+- name: Ensure Grafana configuration directory exists
+  file:
+    path: /etc/grafana
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+  become: yes
+
+- name: Deploy grafana.ini configuration file
+  template:
+    src: templates/grafana.ini.j2
+    dest: /etc/grafana/grafana.ini
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  become: yes
+  notify: Restart Grafana service
+
+# Ensure Grafana service is enabled and running
+- name: Ensure Grafana service is enabled and running
+  systemd:
+    name: grafana-server
+    state: started
+    enabled: yes
+  become: yes
+
+# Ensure Grafana dashboard directory exists
+- name: Ensure Grafana dashboard directory exists
+  file:
+    path: /var/lib/grafana/dashboards
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+  become: yes
+
+# Ensure Grafana dashboards directory exists
+- name: Ensure Grafana dashboards directory exists
+  file:
+    path: /etc/grafana/provisioning/dashboards
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+  become: yes
+
+# Ensure Grafana datasources directory exists
+- name: Ensure Grafana datasources directory exists
+  file:
+    path: /etc/grafana/provisioning/datasources/
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+  become: yes
+
+# Deploy Grafana datasource configuration
+- name: Deploy Grafana datasource configuration
+  template:
+    src: grafana-datasource.yaml.j2
+    dest: /etc/grafana/provisioning/datasources/datasource.yaml
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  become: yes
+  notify:
+    - Restart Grafana service
+
+# Deploy Grafana dashboard configuration
+- name: Deploy Grafana dashboard configuration
+  template:
+    src: grafana-dashboard.yaml.j2
+    dest: /etc/grafana/provisioning/dashboards/dashboard.yaml
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  become: yes
+  notify:
+    - Restart Grafana service
+
+# Deploy Loki default dashboard
+- name: Deploy Loki default dashboard
+  copy:
+    src: files/dashboards/loki-overview.json
+    dest: /var/lib/grafana/dashboards/loki-overview.json
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  become: yes
+  notify:
+    - Restart Grafana service
+
+# Deploy Prometheus enhanced dashboard
+- name: Deploy Prometheus enhanced dashboard
+  copy:
+    src: files/dashboards/prometheus-overview.json
+    dest: /var/lib/grafana/dashboards/prometheus-overview.json
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  become: yes
+  notify:
+    - Restart Grafana service

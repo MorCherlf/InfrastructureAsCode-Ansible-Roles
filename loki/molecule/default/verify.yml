@@ -1,0 +1,99 @@
+---
+- name: Verify Loki Deployment
+  hosts: all
+  tasks:
+    - name: Include default variables
+      include_vars:
+        file: ../../defaults/main.yml
+
+    # 检查 Loki 服务是否正在运行
+    - name: Verify Loki service is active
+      ansible.builtin.systemd:
+        name: loki
+      register: loki_service_status
+
+    - name: Assert Loki service is running
+      ansible.builtin.assert:
+        that:
+          - loki_service_status.status.ActiveState == "active"
+        fail_msg: "Loki service is not running."
+        success_msg: "Loki service is running."
+
+    # 测试 Loki API 是否可用
+    - name: Check Loki HTTP API is accessible
+      uri:
+        url: "http://localhost:{{ loki_http_listen_port }}/ready"
+        status_code: 200
+        timeout: 5
+      register: loki_http_test
+      retries: 10
+      delay: 5
+      until: loki_http_test.status == 200
+      become: yes
+
+    - name: Assert Loki is listening on the specified port
+      assert:
+        that:
+          - loki_http_test.status == 200
+        success_msg: "Loki HTTP API is accessible on port {{ loki_http_listen_port }}."
+        fail_msg: "Loki HTTP API is not accessible on port {{ loki_http_listen_port }}."
+
+    # 检查 Promtail 服务是否正在运行
+    - name: Gather Promtail service status
+      ansible.builtin.service_facts:
+
+    - name: Assert Promtail service is running
+      assert:
+        that:
+          - "'promtail.service' in ansible_facts.services"
+          - "ansible_facts.services['promtail.service'].state == 'running'"
+        success_msg: "Promtail service is running."
+        fail_msg: "Promtail service is not running."
+
+    # 检查 Promtail 是否在监听指定端口
+    - name: Check Promtail HTTP API is accessible
+      uri:
+        url: "http://localhost:{{ promtail_http_port }}/metrics"
+        method: GET
+        status_code: 200
+      register: promtail_http
+      failed_when: not promtail_http.status == 200
+      changed_when: false
+
+    # 向指定的 API 端点发送请求以生成日志
+    - name: Send request to API endpoint to generate logs
+      command: curl http://localhost:8080/medicines
+
+    # 查询 Loki，验证是否包含 API 日志记录
+    - name: Calculate start time for Loki query
+      set_fact:
+        loki_query_start: "{{ ((ansible_date_time.epoch | int) - 300) | string }}000000000"
+
+    - name: Calculate end time for Loki query
+      set_fact:
+        loki_query_end: "{{ (ansible_date_time.epoch | int) | string }}000000000"
+
+    - name: Query Loki for API logs
+      uri:
+        url: "http://localhost:3100/loki/api/v1/query_range?query={job=\"gin_logs\"}&start={{ loki_query_start }}&end={{ loki_query_end }}"
+        method: GET
+        return_content: yes
+      register: loki_logs
+      retries: 10
+      delay: 5
+      until: >
+        loki_logs.content is not none and
+        (loki_logs.content | from_json).status == "success" and
+        ((loki_logs.content | from_json).data.result | length) > 0
+      failed_when: loki_logs.content is not none and
+                   (loki_logs.content | from_json).status != "success"
+
+    - name: Validate Loki response content
+      assert:
+        that:
+          - loki_logs.content is not none
+          - loki_logs.content | from_json is defined
+          - (loki_logs.content | from_json).status == "success"
+          - ((loki_logs.content | from_json).data.result | length) > 0
+        fail_msg: "Loki logs query failed or returned no results."
+        success_msg: "Loki logs query successful and returned results."

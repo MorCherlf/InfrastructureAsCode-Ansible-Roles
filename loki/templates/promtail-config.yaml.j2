@@ -1,0 +1,19 @@
+server:
+  http_listen_port: {{ promtail_http_port | default(9080) }}
+  grpc_listen_port: {{ promtail_grpc_port | default(0) }}
+  log_level: {{ promtail_log_level | default('debug') }}
+
+positions:
+  filename: {{ promtail_positions_file | default('/tmp/positions.yaml') }}
+
+clients:
+  - url: {{ loki_client_url | default('http://localhost:3100/loki/api/v1/push') }}
+
+scrape_configs:
+  - job_name: "{{ promtail_job_name | default('gin_logs') }}"
+    static_configs:
+      - targets:
+          - {{ promtail_target | default('localhost') }}
+        labels:
+          job: "{{ promtail_labels_job | default('gin_logs') }}"
+          __path__: {{ promtail_log_path }}

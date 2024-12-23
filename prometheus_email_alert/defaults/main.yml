@@ -1,0 +1,15 @@
+---
+alertmanager_config_file: /etc/prometheus/alertmanager.yml
+alert_email_to: "example@example.com"
+alert_email_from: "prometheus@example.com"
+alert_email_smtp_smarthost: "smtp.example.com:587"
+alert_email_smtp_auth_username: "user@example.com"
+alert_email_smtp_auth_password: "password"
+alert_email_smtp_require_tls: true
+
+alertmanager_service_name: "prometheus-alertmanager"
+prometheus_service_name: "prometheus"
+prometheus_config_file: "/etc/prometheus/prometheus.yml"
+prometheus_alert_rules_file: "/etc/prometheus/rules/alert.rules.yml"
+alertmanager_http_port: 9093
+prometheus_http_port: 9090

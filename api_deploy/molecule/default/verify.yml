@@ -1,0 +1,41 @@
+---
+- name: Verify Pharmacy App Deployment
+  hosts: all
+  tasks:
+    - name: Verify Docker service is active
+      command: systemctl is-active docker
+      register: docker_service_status
+      changed_when: false
+
+    - name: Assert Docker service is running
+      assert:
+        that:
+          - "'active' in docker_service_status.stdout"
+        fail_msg: "Docker service is not running."
+        success_msg: "Docker service is running."
+
+    - name: Check if Pharmacy App container is running
+      command: >
+        docker ps --filter "name=pharmacy-app" --format {% raw %}"{{.Status}}"{% endraw %}
+      register: pharmacy_app_status
+      changed_when: false
+
+    - name: Assert Pharmacy App container is running
+      assert:
+        that:
+          - "'Up' in pharmacy_app_status.stdout"
+        fail_msg: "Pharmacy App container is not running."
+        success_msg: "Pharmacy App container is running."
+
+    - name: Check if Pharmacy App container is bound to port 8080
+      command: >
+        docker ps --filter "name=pharmacy-app" --format {% raw %}"{{.Ports}}"{% endraw %}
+      register: pharmacy_app_ports
+      changed_when: false
+
+    - name: Assert Pharmacy App container is bound to port 8080
+      assert:
+        that:
+          - "'8080->8080/tcp' in pharmacy_app_ports.stdout"
+        fail_msg: "Pharmacy App container is not bound to port 8080."
+        success_msg: "Pharmacy App container is correctly bound to port 8080."

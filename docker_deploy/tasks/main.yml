@@ -1,0 +1,62 @@
+---
+- name: Update APT package index
+  apt:
+    update_cache: yes
+
+- name: Install required packages for Docker
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+    state: present
+
+- name: Add Docker's official GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Set up Docker repository
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+    state: present
+
+- name: Install Docker CE
+  apt:
+    name: docker-ce
+    state: latest
+
+- name: Ensure Docker service is running and enabled
+  service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Download Docker Compose binary
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-linux-x86_64"
+    dest: /usr/local/bin/docker-compose
+    mode: '0755'
+
+- name: Ensure docker-compose is executable
+  file:
+    path: /usr/local/bin/docker-compose
+    mode: '0755'
+    state: file
+
+- name: Add vagrant user to Docker group
+  user:
+    name: "vagrant"
+    groups: docker
+    append: yes
+
+- name: Refresh user group membership
+  shell: newgrp docker
+  when: ansible_user != "root"
+
+- name: Verify Docker permissions
+  shell: docker run --rm hello-world
+  register: docker_test_run
+  failed_when: docker_test_run.rc != 0
+  changed_when: false

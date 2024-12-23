@@ -1,0 +1,21 @@
+global:
+  smtp_smarthost: '{{ alert_email_smtp_smarthost }}'
+  smtp_from: '{{ alert_email_from }}'
+  smtp_auth_username: '{{ alert_email_smtp_auth_username }}'
+  smtp_auth_password: '{{ alert_email_smtp_auth_password }}'
+  smtp_require_tls: {{ alert_email_smtp_require_tls }}
+
+route:
+  receiver: 'email-alert'
+
+receivers:
+  - name: 'email-alert'
+    email_configs:
+      - to: '{{ alert_email_to }}'
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']

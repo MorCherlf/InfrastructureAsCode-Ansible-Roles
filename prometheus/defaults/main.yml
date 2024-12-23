@@ -1,0 +1,5 @@
+---
+prometheus_config_path: /etc/prometheus/prometheus.yml
+prometheus_data_path: /var/lib/prometheus
+prometheus_job_name: "gin_app"
+prometheus_port: 8080

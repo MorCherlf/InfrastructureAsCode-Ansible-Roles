@@ -1,0 +1,13 @@
+---
+- name: Reload systemd
+  ansible.builtin.command: systemctl daemon-reload
+
+- name: Restart Loki
+  ansible.builtin.service:
+    name: loki
+    state: restarted
+
+- name: Restart Promtail
+  ansible.builtin.service:
+    name: promtail
+    state: restarted

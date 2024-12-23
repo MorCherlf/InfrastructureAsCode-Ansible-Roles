@@ -1,0 +1,30 @@
+---
+- name: Update APT package index
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  become: yes
+
+- name: Install Prometheus
+  apt:
+    name: prometheus
+    state: present
+  become: yes
+
+- name: Ensure Prometheus service is running
+  service:
+    name: prometheus
+    state: started
+    enabled: true
+  become: yes
+
+- name: Deploy Prometheus configuration file
+  template:
+    src: templates/prometheus.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+    owner: prometheus
+    group: prometheus
+    mode: '0644'
+  notify:
+    - Restart Prometheus
+  become: yes

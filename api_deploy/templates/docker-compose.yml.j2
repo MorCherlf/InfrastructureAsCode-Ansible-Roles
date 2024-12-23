@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  pharmacy-app:
+    image: {{ api_image }}
+    container_name: {{ api_container_name }}
+    ports:
+      - {{ api_ports }}
+    environment:
+      - {{ api_environment }}
+    volumes:
+      - "{{ docker_compose_dir }}/{{ api_container_name }}.log:/app/gin_logs.log"
+    restart: always

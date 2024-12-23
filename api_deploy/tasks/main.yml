@@ -1,0 +1,37 @@
+---
+- name: Ensure Docker Compose directory exists
+  ansible.builtin.file:
+    path: "{{ docker_compose_dir }}"
+    state: directory
+
+- name: Create log file for the container if not exists
+  command:
+    cmd: touch "{{ docker_compose_dir }}/{{ api_container_name }}.log"
+  args:
+    creates: "{{ docker_compose_dir }}/{{ api_container_name }}.log"
+  become: yes
+
+- name: Set correct permissions for the log file
+  ansible.builtin.file:
+    path: "{{ docker_compose_dir }}/{{ api_container_name }}.log"
+    mode: '0666'
+  become: yes
+
+- name: Render Docker Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ docker_compose_dir }}/docker-compose.yml"
+
+- name: Pull Docker Compose services
+  command:
+    cmd: docker-compose pull
+    chdir: /opt/docker-compose-pharmacy-app
+  register: docker_compose_pull_result
+  changed_when: "'Downloaded newer image' in docker_compose_pull_result.stdout"
+
+- name: Start Docker Compose services
+  command:
+    cmd: docker-compose up -d
+    chdir: /opt/docker-compose-pharmacy-app
+  register: docker_compose_up_result
+  changed_when: "'Creating' in docker_compose_up_result.stdout or 'Starting' in docker_compose_up_result.stdout"

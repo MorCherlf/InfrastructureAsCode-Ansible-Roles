@@ -1,0 +1,67 @@
+---
+- name: Verify Grafana Role
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Include default variables
+      include_vars:
+        file: ../../defaults/main.yml
+
+    # Verify Grafana Service is started
+    - name: Verify Grafana Service is started
+      systemd:
+        name: grafana-server
+        state: started
+      register: grafana_service_status
+      failed_when: grafana_service_status.status.ActiveState != "active" or grafana_service_status.status.LoadState != "loaded"
+
+    # Verify Grafana HTTP Port
+    - name: Verify Grafana HTTP Port
+      wait_for:
+        host: "127.0.0.1"
+        port: "{{ grafana_http_port }}"
+        state: started
+        timeout: 30
+
+    # Check Grafana API Status
+    - name: Check Grafana API Status
+      uri:
+        url: "http://127.0.0.1:{{ grafana_http_port }}/api/health"
+        method: GET
+        status_code: 200
+        user: "{{ grafana_admin_user }}"
+        password: "{{ grafana_admin_password }}"
+      register: grafana_api_response
+
+    - name: Check API Response
+      fail:
+        msg: "Grafana API health check failed: {{ grafana_api_response.json }}"
+      when: "grafana_api_response.json.database != 'ok'"
+
+    - name: Output Grafana API Response data
+      debug:
+        msg: "Grafana API Health Check Passed: {{ grafana_api_response.json }}"
+      when: "grafana_api_response.json.database == 'ok'"
+
+    - name: Verify the dashboards directors is exist
+      stat:
+        path: /var/lib/grafana/dashboards
+      register: dashboard_directory_status
+
+    - name: Check the dashboards directors is exist
+      assert:
+        that:
+          - dashboard_directory_status.stat.exists
+        fail_msg: "Dashboard directors isn't exist"
+
+    - name: Verify the dashboards config file is exist
+      stat:
+        path: /etc/grafana/provisioning/dashboards/dashboard.yaml
+      register: dashboard_config_status
+
+    - name: Check the dashboards config file is exist
+      assert:
+        that:
+          - dashboard_config_status.stat.exists
+        fail_msg: "Dashboard config file isn't exist"

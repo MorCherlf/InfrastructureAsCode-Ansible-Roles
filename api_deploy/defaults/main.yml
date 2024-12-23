@@ -1,0 +1,7 @@
+---
+docker_compose_dir: "/opt/docker-compose-pharmacy-app"
+api_service_name: "pharmacy-app"
+api_container_name: "pharmacy-app"
+api_image: "morcherlf/pharmacy-demo:latest"
+api_ports: "8080:8080"
+api_environment: "GIN_MODE=release"

@@ -1,0 +1,19 @@
+---
+# Grafana service configuration
+grafana_http_port: 3000
+grafana_root_url: http://localhost:3000
+grafana_disable_sign_up: true
+grafana_auth_anonymous: false
+grafana_admin_user: admin
+grafana_admin_password: admin
+
+# Loki datasource configuration
+loki_datasource_url: http://localhost:3100
+
+# Prometheus datasource configuration
+prometheus_datasource_url: http://localhost:9090
+
+# Grafana dashboard configuration
+grafana_dashboard_provider_name: Default Dashboard Provider
+grafana_dashboard_update_interval: 30
+grafana_dashboard_path: /var/lib/grafana/dashboards

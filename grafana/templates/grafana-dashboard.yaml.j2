@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: "Default Dashboard Provider"
+    orgId: 1
+    folder: "Default Dashboards"
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: {{ grafana_dashboard_update_interval }}
+    options:
+      path: {{ grafana_dashboard_path }}

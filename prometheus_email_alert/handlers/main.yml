@@ -1,0 +1,12 @@
+---
+- name: Restart Alertmanager
+  systemd:
+    name: alertmanager
+    state: restarted
+
+- name: Restart Prometheus
+  systemd:
+    name: prometheus
+    state: restarted
+    enabled: yes
+  become: yes

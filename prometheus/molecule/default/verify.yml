@@ -1,0 +1,35 @@
+---
+- name: Verify Prometheus Deployment
+  hosts: all
+  tasks:
+    - name: Verify Prometheus service is active
+      ansible.builtin.command:
+        cmd: systemctl is-active prometheus
+      register: prometheus_service_status
+      changed_when: false
+
+    - name: Assert Prometheus service is running
+      ansible.builtin.assert:
+        that:
+          - "'active' in prometheus_service_status.stdout"
+        fail_msg: "Prometheus service is not running."
+        success_msg: "Prometheus service is running."
+
+    - name: Include default variables
+      include_vars:
+        file: ../../defaults/main.yml
+
+    - name: Check if Prometheus is bound to the specified port
+      ansible.builtin.shell: |
+        ss -tuln | grep ":{{ prometheus_port }}" -c
+      register: prometheus_port_check
+      changed_when: false
+
+    - name: Assert Prometheus is bound to the specified port
+      ansible.builtin.assert:
+        that:
+          - prometheus_port_check.stdout|int > 0
+        fail_msg: "Prometheus is not bound to port {{ prometheus_port }}."
+        success_msg: "Prometheus is correctly bound to port {{ prometheus_port }}."
+
+

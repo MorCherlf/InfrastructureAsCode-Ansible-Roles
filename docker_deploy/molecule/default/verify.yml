@@ -1,0 +1,59 @@
+---
+- name: Verify Docker installation
+  hosts: all
+  tasks:
+    # 验证 Docker 服务是否正在运行
+    - name: Check Docker service status
+      ansible.builtin.command:
+        cmd: systemctl is-active docker
+      register: docker_service_status
+      changed_when: false
+
+    - name: Assert Docker service is running
+      ansible.builtin.assert:
+        that:
+          - "'active' in docker_service_status.stdout"
+        fail_msg: "Docker service is not running."
+        success_msg: "Docker service is running."
+
+    # 验证 Docker Compose 是否正确安装
+
+    # 加载默认变量
+    - name: Include default variables
+      ansible.builtin.include_vars:
+        file: ../../defaults/main.yml
+        
+    - name: Debug docker_compose_version
+      ansible.builtin.debug:
+        var: docker_compose_version
+
+    - name: Verify Docker Compose version
+      ansible.builtin.command:
+        cmd: docker-compose --version
+      register: docker_compose_version_check
+      changed_when: false
+      failed_when:
+        - docker_compose_version not in docker_compose_version_check.stdout
+
+    - name: Assert Docker Compose version is correct
+      ansible.builtin.assert:
+        that:
+          - docker_compose_version in docker_compose_version_check.stdout
+        fail_msg: "Docker Compose version mismatch."
+        success_msg: "Docker Compose version is correct."
+
+
+    # 验证 Docker 是否能运行容器
+    - name: Test running a Docker container
+      ansible.builtin.command:
+        cmd: docker run --rm hello-world
+      register: docker_test_run
+      changed_when: false
+      failed_when: "'Hello from Docker!' not in docker_test_run.stdout"
+
+    - name: Assert Docker container test succeeded
+      ansible.builtin.assert:
+        that:
+          - "'Hello from Docker!' in docker_test_run.stdout"
+        fail_msg: "Failed to run Docker container."
+        success_msg: "Successfully ran Docker container."

@@ -1,0 +1,96 @@
+---
+- name: Verify Email Alert Role
+  hosts: all
+  tasks:
+    - name: Include default variables
+      include_vars:
+        file: ../../defaults/main.yml
+
+    # 验证 Alertmanager 服务状态
+    - name: Verify Alertmanager service is running
+      ansible.builtin.systemd:
+        name: "{{ alertmanager_service_name }}"
+        state: started
+      register: alertmanager_service_status
+
+    - name: Debug Alertmanager service status
+      debug:
+        var: alertmanager_service_status
+
+    - name: Ensure Alertmanager service is active
+      fail:
+        msg: "Alertmanager service is not running!"
+      when: alertmanager_service_status.status is not defined or alertmanager_service_status.status.SubState != "running"
+
+    # 验证 Prometheus 是否引用了 Alert Rules 文件
+    - name: Verify Prometheus configuration includes alert rules
+      ansible.builtin.command:
+        cmd: grep -q "{{ prometheus_alert_rules_file }}" {{ prometheus_config_file }}
+      register: prometheus_alert_rules_reference
+      ignore_errors: yes
+    - name: Ensure Prometheus is configured with alert rules
+      fail:
+        msg: "Prometheus configuration does not include alert rules!"
+      when: prometheus_alert_rules_reference.rc != 0
+
+    # 验证 Alert Rules 文件是否存在
+    - name: Verify Alert Rules file exists
+      ansible.builtin.stat:
+        path: "{{ prometheus_alert_rules_file }}"
+      register: alert_rules_file_status
+    - name: Ensure Alert Rules file is present
+      fail:
+        msg: "Alert Rules file is missing!"
+      when: not alert_rules_file_status.stat.exists
+
+    # 验证 Prometheus 服务状态
+    - name: Verify Prometheus service is running
+      ansible.builtin.systemd:
+        name: "{{ prometheus_service_name }}"
+        state: started
+      register: prometheus_service_status
+
+    - name: Debug Prometheus service status
+      debug:
+        var: prometheus_service_status
+
+    - name: Ensure Prometheus service is active
+      fail:
+        msg: "Prometheus service is not running!"
+      when: prometheus_service_status.status is not defined or prometheus_service_status.status.SubState != "running"
+
+    # 验证 Prometheus Alert Rules
+    - name: Validate Prometheus alert rules
+      ansible.builtin.command:
+        cmd: promtool check rules {{ prometheus_alert_rules_file }}
+      register: promtool_rules_check
+    - name: Ensure Prometheus alert rules are valid
+      fail:
+        msg: "Prometheus alert rules validation failed!"
+      when: "'FAILED' in promtool_rules_check.stdout"
+
+    # 验证 Alertmanager HTTP 端口是否打开
+    - name: Verify Alertmanager HTTP port
+      ansible.builtin.wait_for:
+        host: "{{ inventory_hostname }}"
+        port: "{{ alertmanager_http_port }}"
+        state: started
+        timeout: 10
+      register: alertmanager_port_check
+    - name: Ensure Alertmanager HTTP port is open
+      fail:
+        msg: "Alertmanager HTTP port {{ alertmanager_http_port }} is not accessible!"
+      when: alertmanager_port_check.failed
+
+    # 验证 Prometheus HTTP 端口是否打开
+    - name: Verify Prometheus HTTP port
+      ansible.builtin.wait_for:
+        host: "{{ inventory_hostname }}"
+        port: "{{ prometheus_http_port }}"
+        state: started
+        timeout: 10
+      register: prometheus_port_check
+    - name: Ensure Prometheus HTTP port is open
+      fail:
+        msg: "Prometheus HTTP port {{ prometheus_http_port }} is not accessible!"
+      when: prometheus_port_check.failed

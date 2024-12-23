@@ -1,0 +1,41 @@
+---
+driver:
+  name: vagrant
+
+platforms:
+  - name: srv1
+    address: 100.117.33.35
+    ansible_user: vagrant
+    ansible_ssh_private_key_file: ~/.ssh/private_key_srv1
+
+  - name: srv2
+    address: 100.117.57.214
+    ansible_user: vagrant
+    ansible_ssh_private_key_file: ~/.ssh/private_key_srv2
+
+provisioner:
+  name: ansible
+  inventory:
+    hosts:
+      all:
+        hosts:
+          srv1:
+            ansible_host: 100.117.33.35
+            ansible_user: vagrant
+            ansible_ssh_private_key_file: ~/.ssh/private_key_srv1
+          srv2:
+            ansible_host: 100.117.57.214
+            ansible_user: vagrant
+            ansible_ssh_private_key_file: ~/.ssh/private_key_srv2
+
+scenario:
+  name: default
+  test_sequence:
+    - dependency
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - verify
+    - destroy

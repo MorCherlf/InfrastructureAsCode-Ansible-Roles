@@ -1,0 +1,37 @@
+---
+loki_auth_enabled: false
+loki_http_listen_port: 3100
+loki_grpc_listen_port: 9095
+loki_path_prefix: /tmp/loki
+loki_kvstore: inmemory
+loki_replication_factor: 1
+loki_schema_from: '2024-12-05'
+loki_store: boltdb-shipper
+loki_object_store: filesystem
+loki_schema: v13
+loki_index_prefix: index_
+loki_index_period: 24h
+loki_active_index_directory: /tmp/loki/boltdb-shipper-active
+loki_cache_location: /tmp/loki/boltdb-shipper-cache
+loki_filesystem_directory: /tmp/loki/chunks
+loki_reject_old_samples: true
+loki_reject_old_samples_max_age: 168h
+loki_allow_structured_metadata: false
+loki_version: v3.3.2
+
+# Promtail server configuration
+promtail_http_port: 9080
+promtail_grpc_port: 0
+promtail_log_level: debug
+
+# Promtail positions file
+promtail_positions_file: /tmp/positions.yaml
+
+# Loki client configuration
+loki_client_url: http://localhost:3100/loki/api/v1/push
+
+# Promtail scrape configuration
+promtail_job_name: gin_logs
+promtail_target: localhost
+promtail_labels_job: gin_logs
+promtail_log_path: /opt/docker-compose-pharmacy-app/pharmacy-app.log

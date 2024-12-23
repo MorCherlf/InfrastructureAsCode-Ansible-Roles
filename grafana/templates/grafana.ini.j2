@@ -1,0 +1,17 @@
+[server]
+# Grafana server configuration
+http_port = {{ grafana_http_port }}
+root_url = {{ grafana_root_url }}
+
+[security]
+# Disable sign-up feature
+disable_sign_up = {{ grafana_disable_sign_up }}
+
+[auth.anonymous]
+# Enable anonymous access
+enabled = {{ grafana_auth_anonymous }}
+
+[users]
+# Default Grafana admin username and password
+default_admin_username = {{ grafana_admin_user }}
+default_admin_password = {{ grafana_admin_password }}

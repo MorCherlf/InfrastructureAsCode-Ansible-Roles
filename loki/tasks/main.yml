@@ -1,0 +1,161 @@
+---
+# Add Aliyun's mirror Grafana APT repository without GPG Key(Due to the local limited)
+- name: Add Aliyun's mirror Grafana APT repository
+  apt_repository:
+    repo: "deb [trusted=yes] https://mirrors.aliyun.com/grafana/apt stable main"
+    state: present
+    filename: grafana
+    update_cache: yes
+  become: yes
+
+# Update APT package index
+- name: Update APT package index
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  become: yes
+
+# Install Loki
+- name: Install Loki
+  apt:
+    name: loki
+    state: latest
+  become: yes
+
+# Install Promtail
+- name: Install Promtail
+  apt:
+    name: promtail
+    state: latest
+  become: yes
+  
+# Ensure Loki directories exist
+- name: Ensure Loki directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: loki
+    group: loki
+    mode: '0755'
+  loop:
+    - /etc/loki
+    - /var/lib/loki
+  become: yes
+
+# Deploy Loki configuration file
+- name: Deploy Loki configuration file
+  template:
+    src: loki-config.yaml.j2
+    dest: /etc/loki/config.yml
+    owner: loki
+    group: loki
+    mode: '0644'
+  become: yes
+  notify:
+    - Reload systemd
+    - Restart Loki
+
+# Create systemd service file for Loki
+- name: Create systemd service file for Loki
+  copy:
+    dest: /etc/systemd/system/loki.service
+    content: |
+      [Unit]
+      Description=Loki Service
+      After=network.target
+
+      [Service]
+      ExecStart=/usr/bin/loki --config.file=/etc/loki/config.yml
+      Restart=always
+      User=loki
+      Group=loki
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  notify:
+    - Reload systemd
+    - Restart Loki
+
+# Enable and start Loki service
+- name: Enable and start Loki service
+  systemd:
+    name: loki
+    state: started
+    enabled: yes
+  become: yes
+
+# Ensure Promtail group exists
+- name: Ensure Promtail group exists
+  ansible.builtin.group:
+    name: promtail
+    system: yes
+  become: yes
+
+# Ensure Promtail user exists
+- name: Ensure Promtail user exists
+  ansible.builtin.user:
+    name: promtail
+    group: promtail
+    system: yes
+  become: yes
+
+# Ensure Promtail directories exist
+- name: Ensure Promtail directories exist
+  file:
+    path: /etc/promtail
+    state: directory
+    owner: promtail
+    group: promtail
+    mode: '0755'
+  become: yes
+
+
+# Deploy Promtail configuration file
+- name: Deploy Promtail configuration file
+  template:
+    src: promtail-config.yaml.j2
+    dest: /etc/promtail/config.yml
+    owner: promtail
+    group: promtail
+    mode: '0644'
+  become: yes
+  notify:
+    - Reload systemd
+    - Restart Promtail
+
+# Create systemd service file for Promtail
+- name: Create systemd service file for Promtail
+  copy:
+    dest: /etc/systemd/system/promtail.service
+    content: |
+      [Unit]
+      Description=Promtail Service
+      After=network.target
+
+      [Service]
+      ExecStart=/usr/bin/promtail --config.file=/etc/promtail/config.yml
+      Restart=always
+      User=promtail
+      Group=promtail
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  notify:
+    - Reload systemd
+    - Restart Promtail
+
+# Enable and start Promtail service
+- name: Enable and start Promtail service
+  systemd:
+    name: promtail
+    state: started
+    enabled: yes
+  become: yes
